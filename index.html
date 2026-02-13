@@ -110,73 +110,48 @@
     </main>
 
     <script>
-        // --- DATA MOCKS (The Backup Plan) ---
-        const MOCK_PRODUCTS = [
-            { title: "Fjallraven - Foldsack No. 1", price: 109.95, image: "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_.jpg" },
-            { title: "Mens Casual Premium Slim Fit", price: 22.3, image: "https://fakestoreapi.com/img/71-3HjGNDUL._AC_SY879._SX._UX._SY._UY_.jpg" },
-            { title: "Mens Cotton Jacket", price: 55.99, image: "https://fakestoreapi.com/img/71li-ujtlUL._AC_UX679_.jpg" },
-            { title: "Solid Gold Petite Micropave", price: 168, image: "https://fakestoreapi.com/img/61sbMiUnoGL._AC_UL640_QL65_ML3_.jpg" },
-            { title: "White Gold Plated Princess", price: 9.99, image: "https://fakestoreapi.com/img/71YAIFU48IL._AC_UL640_QL65_ML3_.jpg" },
-            { title: "SanDisk SSD PLUS 1TB", price: 109, image: "https://fakestoreapi.com/img/61U7T1koQqL._AC_SX679_.jpg" },
-            { title: "Silicon Power 256GB SSD", price: 109, image: "https://fakestoreapi.com/img/71kWymZ+c+L._AC_SX679_.jpg" },
-            { title: "WD 4TB Gaming Drive", price: 114, image: "https://fakestoreapi.com/img/61mtL65D4cL._AC_SX679_.jpg" }
-        ];
-
-        const MOCK_EMPLOYEES = [
-            { name: {first: "John", last: "Doe"}, email: "john.doe@example.com", location: {city: "New York"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/men/75.jpg"} },
-            { name: {first: "Jane", last: "Smith"}, email: "jane.smith@example.com", location: {city: "London"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/women/75.jpg"} },
-            { name: {first: "Michael", last: "Brown"}, email: "m.brown@example.com", location: {city: "Sydney"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/men/32.jpg"} },
-            { name: {first: "Emily", last: "Davis"}, email: "emily.d@example.com", location: {city: "Toronto"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/women/32.jpg"} },
-            { name: {first: "Chris", last: "Wilson"}, email: "c.wilson@example.com", location: {city: "Berlin"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/men/45.jpg"} },
-            { name: {first: "Sarah", last: "Johnson"}, email: "s.johnson@example.com", location: {city: "Paris"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/women/45.jpg"} },
-            { name: {first: "David", last: "Lee"}, email: "david.lee@example.com", location: {city: "Tokyo"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/men/55.jpg"} },
-            { name: {first: "Laura", last: "Martinez"}, email: "laura.m@example.com", location: {city: "Madrid"}, picture: {thumbnail: "https://randomuser.me/api/portraits/thumb/women/55.jpg"} }
-        ];
-
-        const MOCK_CRYPTO = [
-            { rank: 1, name: "Bitcoin", symbol: "BTC", price_usd: "96000.00", percent_change_24h: "2.5" },
-            { rank: 2, name: "Ethereum", symbol: "ETH", price_usd: "2800.00", percent_change_24h: "-1.2" },
-            { rank: 3, name: "Tether", symbol: "USDT", price_usd: "1.00", percent_change_24h: "0.01" },
-            { rank: 4, name: "BNB", symbol: "BNB", price_usd: "600.00", percent_change_24h: "1.5" },
-            { rank: 5, name: "Solana", symbol: "SOL", price_usd: "145.00", percent_change_24h: "5.4" },
-            { rank: 6, name: "XRP", symbol: "XRP", price_usd: "0.60", percent_change_24h: "-0.5" },
-            { rank: 7, name: "USDC", symbol: "USDC", price_usd: "1.00", percent_change_24h: "0.00" },
-            { rank: 8, name: "Cardano", symbol: "ADA", price_usd: "0.45", percent_change_24h: "-2.1" },
-            { rank: 9, name: "Avalanche", symbol: "AVAX", price_usd: "35.00", percent_change_24h: "3.2" },
-            { rank: 10, name: "Dogecoin", symbol: "DOGE", price_usd: "0.15", percent_change_24h: "10.5" }
-        ];
-
-        // --- JAVASCRIPT LOGIC ---
+        // --- GLOBAL STATE ---
+        // We use these boolean flags to check if data is already loaded
+        let productsLoaded = false;
+        let employeesLoaded = false;
+        let cryptoLoaded = false;
         let productsData = [];
 
+        // --- TAB SWITCHER (The Controller) ---
         function switchTab(tabId, element) {
+            // 1. UI: Switch the active section
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
             document.getElementById(tabId).style.display = 'block';
             
+            // 2. UI: Highlight the sidebar button
             document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
             if(element) element.classList.add('active');
 
-            if(tabId === 'commerce') fetchProducts();
-            if(tabId === 'employees') fetchEmployees();
-            if(tabId === 'crypto') fetchCrypto();
+            // 3. LOGIC: Fetch data ONLY if it's not already loaded
+            if(tabId === 'commerce' && !productsLoaded) {
+                fetchProducts();
+            }
+            if(tabId === 'employees' && !employeesLoaded) {
+                fetchEmployees();
+            }
+            if(tabId === 'crypto' && !cryptoLoaded) {
+                fetchCrypto();
+            }
         }
 
-        // 1. PRODUCTS
+        // --- 1. PRODUCTS (FakeStoreAPI) ---
         async function fetchProducts() {
             const container = document.getElementById('productGrid');
-            if(container.innerHTML.trim() !== "") return;
-            
             container.innerHTML = '<p>Loading Inventory...</p>';
+            
             try {
-                // Try fetching
                 const res = await fetch('https://fakestoreapi.com/products?limit=8');
-                if(!res.ok) throw new Error("API Failed");
                 productsData = await res.json();
                 renderProducts(productsData);
+                productsLoaded = true; // Mark as done
             } catch (err) { 
-                console.warn("API failed, using MOCK data");
-                productsData = MOCK_PRODUCTS; // Fallback to mock data
-                renderProducts(productsData);
+                console.error("Commerce failed:", err);
+                container.innerHTML = '<p style="color:red">Failed to load products.</p>';
             }
         }
 
@@ -191,22 +166,20 @@
             `).join('');
         }
 
+        // Search Listener
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const filtered = productsData.filter(p => p.title.toLowerCase().includes(term));
             renderProducts(filtered);
         });
 
-        // 2. EMPLOYEES
+        // --- 2. EMPLOYEES (RandomUser) ---
         async function fetchEmployees() {
             const tbody = document.getElementById('employeeTable');
-            if(tbody.innerHTML.trim() !== "") return;
-            
             tbody.innerHTML = '<tr><td colspan="4">Loading Staff...</td></tr>';
+            
             try {
-                // Try fetching
                 const res = await fetch('https://randomuser.me/api/?results=10');
-                if (!res.ok) throw new Error("API Failed");
                 const data = await res.json();
                 
                 tbody.innerHTML = data.results.map(user => `
@@ -217,58 +190,48 @@
                         <td>${user.location.city}</td>
                     </tr>
                 `).join('');
+                employeesLoaded = true; // Mark as done
             } catch (err) {
-                console.warn("API failed, using MOCK data");
-                // Fallback to mock data
-                tbody.innerHTML = MOCK_EMPLOYEES.map(user => `
-                    <tr>
-                        <td><img src="${user.picture.thumbnail}" class="user-img"></td>
-                        <td>${user.name.first} ${user.name.last}</td>
-                        <td>${user.email}</td>
-                        <td>${user.location.city}</td>
-                    </tr>
-                `).join('');
+                console.error("Employees failed:", err);
+                tbody.innerHTML = '<tr><td colspan="4" style="color:red">Failed to load staff.</td></tr>';
             }
         }
 
-        // 3. CRYPTO
+        // --- 3. CRYPTO (CoinLore) ---
         async function fetchCrypto() {
             const tbody = document.getElementById('cryptoTable');
-            if(tbody.innerHTML.trim() !== "") return;
-            
             tbody.innerHTML = '<tr><td colspan="4">Loading Market Data...</td></tr>';
+
             try {
-                // Try fetching from CoinLore
                 const res = await fetch('https://api.coinlore.net/api/tickers/');
-                if (!res.ok) throw new Error("API Failed");
                 const json = await res.json();
-                renderCrypto(json.data.slice(0, 10));
+                const data = json.data.slice(0, 10);
+                
+                tbody.innerHTML = data.map(coin => {
+                    const price = parseFloat(coin.price_usd).toFixed(2);
+                    const change = parseFloat(coin.percent_change_24h);
+                    const colorClass = change >= 0 ? 'green' : 'red';
+                    
+                    return `
+                    <tr>
+                        <td>${coin.rank}</td>
+                        <td><strong>${coin.name}</strong> <small>(${coin.symbol})</small></td>
+                        <td>$${price}</td>
+                        <td class="${colorClass}">${change}%</td>
+                    </tr>
+                    `;
+                }).join('');
+                cryptoLoaded = true; // Mark as done
             } catch (err) {
-                console.warn("API failed, using MOCK data");
-                renderCrypto(MOCK_CRYPTO); // Fallback
+                console.error("Crypto failed:", err);
+                tbody.innerHTML = '<tr><td colspan="4" style="color:red">Failed to load crypto.</td></tr>';
             }
         }
 
-        function renderCrypto(data) {
-            const tbody = document.getElementById('cryptoTable');
-            tbody.innerHTML = data.map(coin => {
-                const price = parseFloat(coin.price_usd).toFixed(2);
-                const change = parseFloat(coin.percent_change_24h);
-                const colorClass = change >= 0 ? 'green' : 'red';
-                
-                return `
-                <tr>
-                    <td>${coin.rank}</td>
-                    <td><strong>${coin.name}</strong> <small>(${coin.symbol})</small></td>
-                    <td>$${price}</td>
-                    <td class="${colorClass}">${change}%</td>
-                </tr>
-                `;
-            }).join('');
-        }
+        // --- INITIALIZATION ---
+        // Manually trigger the first tab only
+        fetchProducts(); 
 
-        // Init
-        fetchProducts();
     </script>
 </body>
 </html>
