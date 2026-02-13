@@ -19,16 +19,13 @@
         .sidebar li:hover, .sidebar li.active { background: var(--primary); }
         .sidebar i { margin-right: 15px; width: 20px; text-align: center; }
 
-        /* Main Content Area */
+        /* Content */
         .content { flex: 1; padding: 30px; overflow-y: auto; }
         .tab-content { display: none; animation: fadeIn 0.4s; }
         .active-tab { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Headers */
-        h1 { margin-bottom: 20px; color: var(--dark); }
-
-        /* Grid Layout (For Products) */
+        /* Grid & Tables */
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
         .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; transition: transform 0.2s; }
         .card:hover { transform: translateY(-5px); }
@@ -36,19 +33,17 @@
         .card h4 { font-size: 0.9rem; margin-bottom: 10px; color: #444; }
         .price { color: var(--primary); font-weight: bold; font-size: 1.1rem; }
 
-        /* Table Layout (For Employees & Crypto) */
         .table-container { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
         th { background-color: #f8f9fa; color: #666; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
         tr:hover { background-color: #f1f1f1; }
         
-        /* Utility Classes */
         .user-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
         .green { color: #00b894; font-weight: bold; }
         .red { color: #d63031; font-weight: bold; }
         
-        /* Search Bar */
+        /* Search */
         .controls { margin-bottom: 20px; display: flex; gap: 10px; }
         input[type="text"] { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; max-width: 300px; }
     </style>
@@ -71,14 +66,12 @@
     </nav>
 
     <main class="content">
-        
         <section id="commerce" class="tab-content active-tab">
             <h1>Store Inventory</h1>
             <div class="controls">
                 <input type="text" id="searchInput" placeholder="Search products...">
             </div>
-            <div id="productGrid" class="grid-container">
-                </div>
+            <div id="productGrid" class="grid-container"></div>
         </section>
 
         <section id="employees" class="tab-content">
@@ -93,8 +86,7 @@
                             <th>City</th>
                         </tr>
                     </thead>
-                    <tbody id="employeeTable">
-                        </tbody>
+                    <tbody id="employeeTable"></tbody>
                 </table>
             </div>
         </section>
@@ -111,41 +103,33 @@
                             <th>24h Change</th>
                         </tr>
                     </thead>
-                    <tbody id="cryptoTable">
-                        </tbody>
+                    <tbody id="cryptoTable"></tbody>
                 </table>
             </div>
         </section>
-
     </main>
 
     <script>
-        // --- JAVASCRIPT LOGIC ---
+        // --- JAVASCRIPT ---
 
-        // Global Data Storage
         let productsData = [];
 
-        // 1. Tab Switching Logic
         function switchTab(tabId, element) {
-            // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            // Show selected tab
             document.getElementById(tabId).style.display = 'block';
             
-            // Sidebar Highlight
             document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
             if(element) element.classList.add('active');
 
-            // Trigger Fetch based on Tab
             if(tabId === 'commerce') fetchProducts();
             if(tabId === 'employees') fetchEmployees();
             if(tabId === 'crypto') fetchCrypto();
         }
 
-        // 2. Fetch Products (FakeStoreAPI)
+        // 1. PRODUCTS (FakeStoreAPI)
         async function fetchProducts() {
             const container = document.getElementById('productGrid');
-            if(container.innerHTML.trim() !== "") return; // Don't reload if data exists
+            if(container.innerHTML.trim() !== "") return;
             
             container.innerHTML = '<p>Loading Inventory...</p>';
             try {
@@ -153,7 +137,6 @@
                 productsData = await res.json();
                 renderProducts(productsData);
             } catch (err) { 
-                console.error(err);
                 container.innerHTML = '<p style="color:red">Failed to load products.</p>';
             }
         }
@@ -162,36 +145,31 @@
             const container = document.getElementById('productGrid');
             container.innerHTML = data.map(item => `
                 <div class="card">
-                    <img src="${item.image}" alt="${item.title}">
+                    <img src="${item.image}">
                     <h4>${item.title.substring(0, 20)}...</h4>
                     <span class="price">$${item.price}</span>
                 </div>
             `).join('');
         }
 
-        // Search Filter for Products
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const filtered = productsData.filter(p => p.title.toLowerCase().includes(term));
             renderProducts(filtered);
         });
 
-        // 3. Fetch Employees (RandomUser API via Proxy)
+        // 2. EMPLOYEES (Direct Link - No Proxy)
         async function fetchEmployees() {
             const tbody = document.getElementById('employeeTable');
-            // Only fetch if empty to save bandwidth
-            if(tbody.innerHTML.trim() !== "") return; 
+            if(tbody.innerHTML.trim() !== "") return;
             
             tbody.innerHTML = '<tr><td colspan="4">Loading Staff...</td></tr>';
-            
             try {
-                // USING PROXY to fix CORS error
-                const proxyUrl = 'https://api.allorigins.win/raw?url=';
-                const targetUrl = 'https://randomuser.me/api/?results=10';
+                // CHANGED: Using direct link. RandomUser supports GitHub Pages HTTPS.
+                const res = await fetch('https://randomuser.me/api/?results=10');
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
                 
-                const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
                 const data = await res.json();
-                
                 tbody.innerHTML = data.results.map(user => `
                     <tr>
                         <td><img src="${user.picture.thumbnail}" class="user-img"></td>
@@ -201,28 +179,28 @@
                     </tr>
                 `).join('');
             } catch (err) {
-                console.error("Employee Error:", err);
-                tbody.innerHTML = '<tr><td colspan="4" style="color:red">Network Error (CORS). Check Console.</td></tr>';
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="4" style="color:red">Error: ${err.message}</td></tr>`;
             }
         }
 
-        // 4. Fetch Crypto (CoinCap API via Proxy)
+        // 3. CRYPTO (Switched to CoinLore - More Stable)
         async function fetchCrypto() {
             const tbody = document.getElementById('cryptoTable');
-            // Allow reload for crypto to get fresh prices, but show loading state
-            tbody.innerHTML = '<tr><td colspan="4">Loading Live Prices...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4">Loading Market Data...</td></tr>';
 
             try {
-                // USING PROXY to fix CORS error
-                const proxyUrl = 'https://api.allorigins.win/raw?url=';
-                const targetUrl = 'https://api.coincap.io/v2/assets?limit=10';
+                // CHANGED: Switched to CoinLore API. It is very CORS friendly.
+                const res = await fetch('https://api.coinlore.net/api/tickers/');
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
                 
-                const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
                 const json = await res.json();
+                // Slice to get top 10 only
+                const data = json.data.slice(0, 10);
                 
-                tbody.innerHTML = json.data.map(coin => {
-                    const price = parseFloat(coin.priceUsd).toFixed(2);
-                    const change = parseFloat(coin.changePercent24Hr).toFixed(2);
+                tbody.innerHTML = data.map(coin => {
+                    const price = parseFloat(coin.price_usd).toFixed(2);
+                    const change = parseFloat(coin.percent_change_24h);
                     const colorClass = change >= 0 ? 'green' : 'red';
                     
                     return `
@@ -235,12 +213,12 @@
                     `;
                 }).join('');
             } catch (err) {
-                console.error("Crypto Error:", err);
-                tbody.innerHTML = '<tr><td colspan="4" style="color:red">Network Error (CORS). Check Console.</td></tr>';
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="4" style="color:red">Error: ${err.message}</td></tr>`;
             }
         }
 
-        // Initialize First Tab
+        // Init
         fetchProducts();
     </script>
 </body>
